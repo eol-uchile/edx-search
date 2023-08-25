@@ -1,7 +1,6 @@
 """ search business logic implementations """
 from __future__ import absolute_import
 from datetime import datetime
-
 from django.conf import settings
 
 from .filter_generator import SearchFilterGenerator
@@ -75,7 +74,7 @@ def perform_search(
     return results
 
 
-def course_discovery_search(search_term=None, size=20, from_=0, field_dictionary=None):
+def course_discovery_search(search_term=None, size=20, from_=0, field_dictionary=None, order_by="", year="", state=""):
     """
     Course Discovery activities against the search engine index of course details
     """
@@ -93,18 +92,30 @@ def course_discovery_search(search_term=None, size=20, from_=0, field_dictionary
     searcher = SearchEngine.get_search_engine(getattr(settings, "COURSEWARE_INDEX_NAME", "courseware_index"))
     if not searcher:
         raise NoSearchEngineError("No search engine specified in settings.SEARCH_ENGINE")
-
+    filter_dictionary = {"hidden": False}
+    sort = ""
+    if order_by == "newer":
+        sort = "start:desc"
+    if order_by == "older":
+        sort = "start"
+    if year != "" and year.isnumeric():
+        year = int(year)
+        use_field_dictionary["start"] = DateRange(datetime(year, 1, 1), datetime(year+1, 1, 1))
+    if state in ['active', 'finished']:
+        if state == 'active':
+            use_field_dictionary["end"] = DateRange(datetime.utcnow(), None)
+        else:
+            use_field_dictionary["end"] = DateRange(None, datetime.utcnow())
     results = searcher.search(
         query_string=search_term,
         doc_type="course_info",
         size=size,
         from_=from_,
-        # only show when enrollment start IS provided and is before now
         field_dictionary=use_field_dictionary,
-        # show if no enrollment end is provided and has not yet been reached
-        filter_dictionary={"end": DateRange(datetime.utcnow(), None), "hidden": False},
+        filter_dictionary=filter_dictionary,
         exclude_dictionary=exclude_dictionary,
         facet_terms=course_discovery_facets(),
+        sort=sort
     )
 
     return results

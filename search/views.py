@@ -174,7 +174,9 @@ def course_discovery(request):
     status_code = 500
 
     search_term = request.POST.get("search_string", None)
-
+    order_by = request.POST.get("order_by", "")
+    year = request.POST.get("year", "")
+    state = request.POST.get("state", "")
     try:
         size, from_, page = _process_pagination_values(request)
         field_dictionary = _process_field_values(request)
@@ -194,6 +196,9 @@ def course_discovery(request):
             size=size,
             from_=from_,
             field_dictionary=field_dictionary,
+            order_by=order_by,
+            year=year,
+            state=state
         )
 
         # Analytics - log search results before sending to browser
