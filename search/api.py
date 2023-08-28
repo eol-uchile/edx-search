@@ -106,6 +106,16 @@ def course_discovery_search(search_term=None, size=20, from_=0, field_dictionary
             use_field_dictionary["end"] = DateRange(datetime.utcnow(), None)
         else:
             use_field_dictionary["end"] = DateRange(None, datetime.utcnow())
+
+    ids = [
+        "course-v1:OPENUCHILE+TEST01+2022",
+        "course-v1:openuchile+Test0101+2023_T1",
+        "course-v1:openuchile+TC3+2022_T3",
+        "course-v1:openuchile+EOL-101+2021_2",
+        "course-v1:openuchile+TCD0102+2022_T2",
+        "course-v1:OpenUChile+TCD01+2022_T",
+        "course-v1:openuchile+test101+2021"
+    ]
     results = searcher.search(
         query_string=search_term,
         doc_type="course_info",
@@ -115,6 +125,7 @@ def course_discovery_search(search_term=None, size=20, from_=0, field_dictionary
         filter_dictionary=filter_dictionary,
         exclude_dictionary=exclude_dictionary,
         facet_terms=course_discovery_facets(),
+        exclude_ids=ids,
         sort=sort
     )
 
