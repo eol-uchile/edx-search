@@ -92,7 +92,7 @@ def course_discovery_search(search_term=None, size=20, from_=0, field_dictionary
     searcher = SearchEngine.get_search_engine(getattr(settings, "COURSEWARE_INDEX_NAME", "courseware_index"))
     if not searcher:
         raise NoSearchEngineError("No search engine specified in settings.SEARCH_ENGINE")
-    filter_dictionary = {"hidden": False}
+    filter_dictionary = {} #"hidden": False
     sort = ""
     if order_by == "newer":
         sort = "start:desc"
@@ -106,6 +106,10 @@ def course_discovery_search(search_term=None, size=20, from_=0, field_dictionary
             use_field_dictionary["end"] = DateRange(datetime.utcnow(), None)
         else:
             use_field_dictionary["end"] = DateRange(None, datetime.utcnow())
+    from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
+    ids = list(CourseOverview.objects.exclude(catalog_visibility="both").values("id"))
+    ids = [str(x['id']) for x in ids]
+    exclude_dictionary["_id"] = ids
     results = searcher.search(
         query_string=search_term,
         doc_type="course_info",
