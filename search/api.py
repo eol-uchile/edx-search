@@ -74,7 +74,7 @@ def perform_search(
     return results
 
 
-def course_discovery_search(search_term=None, size=20, from_=0, field_dictionary=None, order_by="", year="", state=""):
+def course_discovery_search(search_term=None, size=20, from_=0, field_dictionary=None, order_by="", year="", state="", classification=""):
     """
     Course Discovery activities against the search engine index of course details
     """
@@ -110,6 +110,17 @@ def course_discovery_search(search_term=None, size=20, from_=0, field_dictionary
     ids = list(CourseOverview.objects.exclude(catalog_visibility="both").values("id"))
     ids = [str(x['id']) for x in ids]
     exclude_dictionary["_id"] = ids
+    if classification != "":
+        try:
+            from course_classification.helpers import get_courses_by_classification
+            courses = get_courses_by_classification(int(classification))
+
+            ids = list(CourseOverview.objects.exclude(id__in=courses).values("id"))
+            ids = [str(x['id']) for x in ids]
+
+            exclude_dictionary["_id"] += ids
+        except Exception as e:
+            pass
     results = searcher.search(
         query_string=search_term,
         doc_type="course_info",
@@ -121,5 +132,4 @@ def course_discovery_search(search_term=None, size=20, from_=0, field_dictionary
         facet_terms=course_discovery_facets(),
         sort=sort
     )
-
     return results

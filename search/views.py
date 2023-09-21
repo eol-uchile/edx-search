@@ -177,6 +177,7 @@ def course_discovery(request):
     order_by = request.POST.get("order_by", "")
     year = request.POST.get("year", "")
     state = request.POST.get("state", "")
+    cc = request.POST.get("classification", "") #course classification
     try:
         size, from_, page = _process_pagination_values(request)
         field_dictionary = _process_field_values(request)
@@ -198,7 +199,8 @@ def course_discovery(request):
             field_dictionary=field_dictionary,
             order_by=order_by,
             year=year,
-            state=state
+            state=state,
+            classification=cc
         )
 
         # Analytics - log search results before sending to browser
