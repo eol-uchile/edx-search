@@ -7,7 +7,8 @@ from .filter_generator import SearchFilterGenerator
 from .search_engine_base import SearchEngine
 from .result_processor import SearchResultProcessor
 from .utils import DateRange
-
+import logging
+log = logging.getLogger(__name__)  # pylint: disable=invalid-name
 # Default filters that we support, override using COURSE_DISCOVERY_FILTERS setting if desired
 DEFAULT_FILTER_FIELDS = ["org", "modes", "language"]
 
@@ -120,6 +121,7 @@ def course_discovery_search(search_term=None, size=20, from_=0, field_dictionary
 
             exclude_dictionary["_id"] += ids
         except Exception as e:
+            log.error("Course Discovery - Error in course_classification get_courses_by_classification function, error: {}".format(str(e)))
             pass
     results = searcher.search(
         query_string=search_term,
@@ -132,4 +134,10 @@ def course_discovery_search(search_term=None, size=20, from_=0, field_dictionary
         facet_terms=course_discovery_facets(),
         sort=sort
     )
+    try:
+        from course_classification.helpers import set_data_courses
+        results['results'] = set_data_courses(results['results'])
+    except Exception as e:
+        log.error("Course Discovery - Error in course_classification set_data_courses function, error: {}".format(str(e)))
+        pass
     return results
