@@ -102,11 +102,15 @@ def course_discovery_search(search_term=None, size=20, from_=0, field_dictionary
     if year != "" and year.isnumeric():
         year = int(year)
         use_field_dictionary["start"] = DateRange(datetime(year, 1, 1), datetime(year+1, 1, 1))
-    if state in ['active', 'finished']:
+    if state in ['active', 'finished','coming_soon']:
         if state == 'active':
             use_field_dictionary["end"] = DateRange(datetime.utcnow(), None)
-        else:
+        elif state == 'finished':
             use_field_dictionary["end"] = DateRange(None, datetime.utcnow())
+        elif state == 'coming_soon':
+            use_field_dictionary["start"] = DateRange(datetime.utcnow(), datetime(2300, 1, 1))
+            if year != "" and year.isnumeric():
+                use_field_dictionary["start"] = DateRange(datetime.utcnow(), datetime(year+1, 1, 1))
     from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
     ids = list(CourseOverview.objects.exclude(catalog_visibility="both").values("id"))
     ids = [str(x['id']) for x in ids]
