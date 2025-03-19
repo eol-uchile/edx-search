@@ -95,22 +95,31 @@ def course_discovery_search(search_term=None, size=20, from_=0, field_dictionary
         raise NoSearchEngineError("No search engine specified in settings.SEARCH_ENGINE")
     filter_dictionary = {} #"hidden": False
     sort = ""
+    year_int = ""
     if order_by == "newer":
         sort = "start:desc"
     if order_by == "older":
         sort = "start"
     if year != "" and year.isnumeric():
-        year = int(year)
-        use_field_dictionary["start"] = DateRange(datetime(year, 1, 1), datetime(year+1, 1, 1))
+        year_int = int(year)
+        use_field_dictionary["start"] = DateRange(datetime(year_int, 1, 1), datetime(year_int+1, 1, 1))
     if state in ['active', 'finished','coming_soon']:
         if state == 'active':
-            use_field_dictionary["end"] = DateRange(datetime.utcnow(), None)
+            if year_int != "":
+                use_field_dictionary["start"] = DateRange(datetime(year_int, 1, 1),  datetime.utcnow())
+                use_field_dictionary["end"] = DateRange(datetime.utcnow(), datetime(year_int+1, 1, 1))
+            else:
+                use_field_dictionary["start"] = DateRange(None, datetime.utcnow())
+                use_field_dictionary["end"] = DateRange(datetime.utcnow(), None)
         elif state == 'finished':
+            if year_int != "":
+                use_field_dictionary["start"] = DateRange(datetime(year_int, 1, 1), datetime(year_int+1, 1, 1))
             use_field_dictionary["end"] = DateRange(None, datetime.utcnow())
         elif state == 'coming_soon':
-            use_field_dictionary["start"] = DateRange(datetime.utcnow(), datetime(2300, 1, 1))
-            if year != "" and year.isnumeric():
-                use_field_dictionary["start"] = DateRange(datetime.utcnow(), datetime(year+1, 1, 1))
+            if year_int != "":
+                use_field_dictionary["start"] = DateRange(datetime.utcnow(), datetime(year_int+1, 1, 1))
+            else:
+                use_field_dictionary["start"] = DateRange(datetime.utcnow(), None)
     from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
     ids = list(CourseOverview.objects.exclude(catalog_visibility="both").values("id"))
     ids = [str(x['id']) for x in ids]
