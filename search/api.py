@@ -2,6 +2,8 @@
 from __future__ import absolute_import
 from datetime import datetime
 from django.conf import settings
+from django.utils import timezone
+from django.db.models import Q
 
 from .filter_generator import SearchFilterGenerator
 from .search_engine_base import SearchEngine
@@ -81,61 +83,61 @@ def course_discovery_search(search_term=None, size=20, from_=0, field_dictionary
     """
     # We'll ignore the course-enrollemnt informaiton in field and filter
     # dictionary, and use our own logic upon enrollment dates for these
-    use_search_fields = ["org"]
     (search_fields, _, exclude_dictionary) = SearchFilterGenerator.generate_field_filters()
     use_field_dictionary = {}
-    use_field_dictionary.update({field: search_fields[field] for field in search_fields if field in use_search_fields})
-    if field_dictionary:
-        use_field_dictionary.update(field_dictionary)
-    #if not getattr(settings, "SEARCH_SKIP_ENROLLMENT_START_DATE_FILTERING", False):
-    #    use_field_dictionary["enrollment_start"] = DateRange(None, datetime.utcnow())
-
     searcher = SearchEngine.get_search_engine(getattr(settings, "COURSEWARE_INDEX_NAME", "courseware_index"))
     if not searcher:
         raise NoSearchEngineError("No search engine specified in settings.SEARCH_ENGINE")
     filter_dictionary = {} #"hidden": False
     sort = ""
     year_int = ""
+    # Initialize variable to save querys
+    query = Q()
     if order_by == "newer":
         sort = "start:desc"
     if order_by == "older":
         sort = "start"
+    # Check if year exist and test if is it numeric
     if year != "" and year.isnumeric():
         year_int = int(year)
-        use_field_dictionary["start"] = DateRange(datetime(year_int, 1, 1), datetime(year_int+1, 1, 1))
+        # Check if the start date range between January 1 and December 31 of a year
+        query &= Q(start__range = (datetime(year_int, 1, 1), datetime(year_int, 12, 31)))
+    # Check if state exist and test if in one of possible states
     if state in ['active', 'finished','coming_soon']:
         if state == 'active':
+            # Check if end date is greater than today or null and the start date range is between January 1 and today
             if year_int != "":
-                use_field_dictionary["start"] = DateRange(datetime(year_int, 1, 1),  datetime.utcnow())
-                use_field_dictionary["end"] = DateRange(datetime.utcnow(), datetime(year_int+1, 1, 1))
+                query &= Q(Q(end__gt = datetime.utcnow()) | Q(end__isnull = True)) & Q(start__range = (datetime(year_int, 1, 1), datetime.utcnow()))
+            # Check if end date is greater than today or null and start date is less than or equal to today
             else:
-                use_field_dictionary["start"] = DateRange(None, datetime.utcnow())
-                use_field_dictionary["end"] = DateRange(datetime.utcnow(), None)
+                query &= Q(Q(end__gt = datetime.utcnow()) | Q(end__isnull = True)) & Q(start__lte = datetime.utcnow())
         elif state == 'finished':
-            if year_int != "":
-                use_field_dictionary["start"] = DateRange(datetime(year_int, 1, 1), datetime(year_int+1, 1, 1))
-            use_field_dictionary["end"] = DateRange(None, datetime.utcnow())
+            # Check if end date is less than today
+            query &= Q(end__lte = datetime.utcnow())
         elif state == 'coming_soon':
+            # Check if the start date range between today and December 31 of a year
             if year_int != "":
-                use_field_dictionary["start"] = DateRange(datetime.utcnow(), datetime(year_int+1, 1, 1))
+                query &= Q(start__range = (datetime.utcnow(), datetime(year_int, 12, 31)))
+            # Check if the start date is greater than today
             else:
-                use_field_dictionary["start"] = DateRange(datetime.utcnow(), None)
-    from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
-    ids = list(CourseOverview.objects.exclude(catalog_visibility="both").values("id"))
-    ids = [str(x['id']) for x in ids]
-    exclude_dictionary["_id"] = ids
+                query &= Q(start__gt = datetime.utcnow())
+    # Check if classification exist
     if classification != "":
         try:
             from course_classification.helpers import get_courses_by_classification
             courses = get_courses_by_classification(int(classification))
-
-            ids = list(CourseOverview.objects.exclude(id__in=courses).values("id"))
-            ids = [str(x['id']) for x in ids]
-
-            exclude_dictionary["_id"] += ids
+            query &= Q(id__in=courses)
         except Exception as e:
             log.error("Course Discovery - Error in course_classification get_courses_by_classification function, error: {}".format(str(e)))
             pass
+    # Check if query is not empty
+    if query:
+        from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
+        ids = list(CourseOverview.objects.exclude(query).values("id"))
+        ids = [str(x['id']) for x in ids]
+        exclude_dictionary["_id"] = ids
+
+    # get results using exclude terms
     results = searcher.search(
         query_string=search_term,
         doc_type="course_info",
@@ -148,8 +150,9 @@ def course_discovery_search(search_term=None, size=20, from_=0, field_dictionary
         sort=sort
     )
     try:
-        from course_classification.helpers import set_data_courses
+        from course_classification.helpers import set_data_courses, classify_and_sort_courses
         results['results'] = set_data_courses(results['results'])
+  
     except Exception as e:
         log.error("Course Discovery - Error in course_classification set_data_courses function, error: {}".format(str(e)))
         pass
