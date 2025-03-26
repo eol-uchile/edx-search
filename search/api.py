@@ -150,9 +150,8 @@ def course_discovery_search(search_term=None, size=20, from_=0, field_dictionary
         sort=sort
     )
     try:
-        from course_classification.helpers import set_data_courses, classify_and_sort_courses
+        from course_classification.helpers import set_data_courses
         results['results'] = set_data_courses(results['results'])
-  
     except Exception as e:
         log.error("Course Discovery - Error in course_classification set_data_courses function, error: {}".format(str(e)))
         pass
