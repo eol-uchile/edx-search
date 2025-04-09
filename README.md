@@ -1,4 +1,8 @@
-# edx-search [![Build Status](https://travis-ci.org/edx/edx-search.svg?branch=master)](https://travis-ci.org/edx/edx-search) [![Coverage Status](https://coveralls.io/repos/edx/edx-search/badge.svg?branch=master&service=github)](https://coveralls.io/github/edx/edx-search?branch=master)
+# edx-search 
+
+![Coverage Status](/coverage-badge.svg)
+
+[![Build Status](https://travis-ci.org/edx/edx-search.svg?branch=master)](https://travis-ci.org/edx/edx-search)
 
 This is a django application to provide access to search services from within edx-platform applications.
 
@@ -252,3 +256,15 @@ Users of the `views.do_search` view can choose to override the SearchResultProce
 In particular, the base SearchResultProcessor adds in each python property alongside the properties within the results. So, the override class simply defines properties that it desires to be exposed alongside the results - for example, the LMS includes an `LmsSearchResultProcessor` that defines properties `url` and `location` which are used to infer the url / location for each search result. In this fashion, the search client can blend in information that it infers from the result fields, but it knows how to format / calculate.
 
 Also, SearchResultProcessor overriders can override the member `should_remove` which allows the client app to determine if access should be excluded to the search result - for example, the LMS includes an implementation of this member that calls the LMS `has_access` as a last safety resort in case the end user does not have access to the result returned.
+
+
+## TESTS
+**Prepare tests:**
+
+- Install **act** following the instructions in [https://nektosact.com/installation/index.html](https://nektosact.com/installation/index.html)
+
+**Run tests:**
+- In a terminal at the root of the project
+    ```
+    act -W .github/workflows/pythonapp.yml
+    ```
