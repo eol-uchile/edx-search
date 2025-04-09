@@ -5,3 +5,8 @@
 .coverage
 .idea/
 .tox
+
+# openedx test files
+test_root/
+setup.cfg
+coverage.xml
