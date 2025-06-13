@@ -13,4 +13,7 @@ urlpatterns = [
     url(r'^$', views.do_search, name='do_search'),
     url(r'^{}$'.format(COURSE_ID_PATTERN), views.do_search, name='do_search'),
     url(r'^course_discovery/$', views.course_discovery, name='course_discovery'),
+    ##  ---------- EOL
+    url(r'^course_discovery_eol/$', views.course_discovery_eol, name='course_discovery_eol'),
+    ##  ---------- EOL
 ]
