@@ -2,7 +2,8 @@
 
 set -e
 
-pip install -e /openedx/requirements/app
+pip install --src /openedx/venv/src -e git+https://github.com/eol-uchile/course_classification@1.0.0#egg=course_classification
+pip install --src /openedx/venv/src -e /openedx/requirements/app
 pip install pytest-cov genbadge[coverage]
 
 cd /openedx/requirements/app
