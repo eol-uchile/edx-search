@@ -1,32 +1,11 @@
 """ search business logic implementations """
-from __future__ import absolute_import
-from datetime import datetime
-
-from django.conf import settings
-
-from .filter_generator import SearchFilterGenerator
-from .search_engine_base import SearchEngine
-
+from api import *
 from course_classification.helpers import get_courses_by_classification, set_data_courses
 from django.db.models import Q
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
-
 import logging
+
 log = logging.getLogger(__name__)  # pylint: disable=invalid-name
-
-# Default filters that we support, override using COURSE_DISCOVERY_FILTERS setting if desired
-DEFAULT_FILTER_FIELDS = ["org", "modes", "language"]
-
-
-def course_discovery_filter_fields():
-    """ look up the desired list of course discovery filter fields """
-    return getattr(settings, "COURSE_DISCOVERY_FILTERS", DEFAULT_FILTER_FIELDS)
-
-
-def course_discovery_facets():
-    """ Discovery facets to include, by default we specify each filter field with unspecified size attribute """
-    return getattr(settings, "COURSE_DISCOVERY_FACETS", {field: {} for field in course_discovery_filter_fields()})
-
 
 def course_discovery_search_eol(search_term=None, size=20, from_=0, field_dictionary=None, order_by="", year="", state="", classification=""):
     """
