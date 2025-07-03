@@ -1,5 +1,5 @@
 """ search business logic implementations """
-from api import *
+from .api import *
 from course_classification.helpers import get_courses_by_classification, set_data_courses
 from django.db.models import Q
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
